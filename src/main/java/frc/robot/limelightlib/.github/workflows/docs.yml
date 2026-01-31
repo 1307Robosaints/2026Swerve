@@ -1,0 +1,35 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate Javadoc
+        run: javadoc --ignore-source-errors -d doc -Xdoclint:none LimelightHelpers.java
+
+      - name: Deploy to docs branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: doc
+          branch: docs
+          clean: true
+          single-commit: true
