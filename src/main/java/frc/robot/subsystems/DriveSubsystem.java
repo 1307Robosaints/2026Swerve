@@ -21,14 +21,16 @@ import frc.robot.Constants.DriveConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.math.geometry.Twist2d;
 import org.littletonrobotics.junction.Logger;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
 
 public class DriveSubsystem extends SubsystemBase {
  
-  private Boolean feildoreint;
-  private final SendableChooser<Boolean> m_feildoreint = new SendableChooser<Boolean>();
- 
+
   // Create MAXSwerveModules
   private final MAXSwerveModule m_frontLeft = new MAXSwerveModule(
       DriveConstants.kFrontLeftDrivingCanId,
@@ -53,7 +55,6 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final ADXRS450_Gyro m_gyro = new ADXRS450_Gyro();
 
-
   // Odometry class for tracking robot pose
   SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
       DriveConstants.kDriveKinematics,
@@ -65,30 +66,55 @@ public class DriveSubsystem extends SubsystemBase {
           m_rearRight.getPosition()
       });
 
-  //Robot Pose Updater
-  private Pose2d robotPose = new Pose2d();
+  // SIMULATION VARIABLES
+  private Pose2d m_simPose = new Pose2d();
+  private ChassisSpeeds m_simChassisSpeeds = new ChassisSpeeds();
+  private final Field2d m_field = new Field2d();
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
+
+    //for Simulator
+    SmartDashboard.putData("Field", m_field);
   }
 
   @Override
   public void periodic() {
+   
     //System.out.println(m_gyro.getAngle());
-    // Update the odometry in the periodic block
-    m_odometry.update(
+
+    if(RobotBase.isSimulation()) { 
+    // SIMULATION CODE
+      double dt = 0.02; // Integrate motion (20ms loop)
+
+      m_simPose = m_simPose.exp(
+        new Twist2d(
+          m_simChassisSpeeds.vxMetersPerSecond * dt,
+          m_simChassisSpeeds.vyMetersPerSecond * dt,
+          m_simChassisSpeeds.omegaRadiansPerSecond * dt));
+
+      m_field.setRobotPose(m_simPose);//sets SIMpose to smart dashboard
+
+    } else {
+      //ACTUAL ROBOT CODE
+     
+      m_odometry.update(  // Update the odometry in the periodic block
         Rotation2d.fromDegrees(m_gyro.getAngle()),
-        new SwerveModulePosition[] {
+          new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
-        });
+          });
 
-    robotPose = getPose();
-    Logger.recordOutput("Robot Pose", robotPose);
+       m_field.setRobotPose(getPose());//sets REALpose to smart dashboard
+
+    }
+    
+     
+     
   }
 
   /**
@@ -137,13 +163,15 @@ public class DriveSubsystem extends SubsystemBase {
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
                 Rotation2d.fromDegrees(m_gyro.getAngle()))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
-    /*SwerveDriveKinematics.desaturateWheelSpeeds(
-        swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
-    m_frontLeft.setDesiredState(swerveModuleStates[0]);
-    m_frontRight.setDesiredState(swerveModuleStates[1]);
-    m_rearLeft.setDesiredState(swerveModuleStates[2]);
-    m_rearRight.setDesiredState(swerveModuleStates[3]); */ 
-    setModuleStates(swerveModuleStates); //simplified above code by calling setModuleStates
+    setModuleStates(swerveModuleStates); //set the desired states of the modules
+
+    // SIMULATION CODE
+    if(RobotBase.isSimulation()) {
+      m_simChassisSpeeds = fieldRelative
+          ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
+              m_simPose.getRotation())
+          : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered);
+    }
   }
 
   /**
