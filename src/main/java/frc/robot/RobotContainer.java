@@ -13,12 +13,17 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.codebases.controllers.REVController;
+import frc.robot.codebases.controllers.XboxControllerWrapper;
 import frc.robot.commands.Drive;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
@@ -26,6 +31,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.codebases.controllers.Controller;
+import frc.robot.codebases.controllers.PS4ControllerWrapper;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 import java.util.List;
 
 /*
@@ -40,12 +50,21 @@ public class RobotContainer {
   private final LimelightSubsystem m_limelight = new LimelightSubsystem();
 
   // The driver's controller
-  //XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
-private final PS4Controller m_driverController = new PS4Controller(0);
+  private final REVController m_REVController = new REVController(0);
+  private final PS4ControllerWrapper m_PS4Controller = new PS4ControllerWrapper(0);
+  private final XboxControllerWrapper m_XboxController = new XboxControllerWrapper(0);
+  private final SendableChooser<GenericHID> m_controllerChooser = new SendableChooser<>();
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
+    //Configure the controller chooser
+    m_controllerChooser.setDefaultOption("PS4", m_PS4Controller); //options
+    m_controllerChooser.addOption("REV", m_REVController);
+    m_controllerChooser.addOption("Xbox", m_XboxController);
+    SmartDashboard.putData("Controller Chooser", m_controllerChooser); //put it on the dashboard
+   
     // Configure the button bindings
     configureButtonBindings();
 
@@ -55,13 +74,29 @@ private final PS4Controller m_driverController = new PS4Controller(0);
         // Turning is controlled by the X axis of the right stick.
         new RunCommand(
             () -> m_robotDrive.drive(
-                -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
-                false),
+                -MathUtil.applyDeadband(getController().getLeftY(), OIConstants.kDriveDeadband),
+                -MathUtil.applyDeadband(getController().getLeftX(), OIConstants.kDriveDeadband),
+                -MathUtil.applyDeadband(getController().getRightX(), OIConstants.kDriveDeadband), //right X, they are 
+                true),
             m_robotDrive));
+
+    //Smart Dashboard Buttons
+    SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_robotDrive.zeroHeading(), m_robotDrive));
+    
   }
 
+  /**
+   * Returns the currently selected controller.
+   */
+  public GenericHID getControllerHID() {
+    return m_controllerChooser.getSelected();
+  }
+
+  public Controller getController() {
+    return (Controller) m_controllerChooser.getSelected();
+  }
+
+  
   /**
    * Use this method to define your button->command mappings. Buttons can be
    * created by
@@ -72,7 +107,7 @@ private final PS4Controller m_driverController = new PS4Controller(0);
    * {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    new JoystickButton(m_driverController, PS4Controller.Button.kSquare.value)
+    new JoystickButton(getControllerHID(), PS4Controller.Button.kSquare.value)
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
             m_robotDrive));

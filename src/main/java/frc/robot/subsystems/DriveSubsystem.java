@@ -58,7 +58,7 @@ public class DriveSubsystem extends SubsystemBase {
   // Odometry class for tracking robot pose
   SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
       DriveConstants.kDriveKinematics,
-      Rotation2d.fromDegrees(m_gyro.getAngle()),
+      Rotation2d.fromDegrees(getRawGyro()),
       new SwerveModulePosition[] {
           m_frontLeft.getPosition(),
           m_frontRight.getPosition(),
@@ -78,17 +78,21 @@ public class DriveSubsystem extends SubsystemBase {
 
     //for Simulator
     SmartDashboard.putData("Field", m_field);
+
+    //set Gyro to 0 at the start of the program
+    m_gyro.reset();
   }
 
   @Override
   public void periodic() {
    
-    //System.out.println(m_gyro.getAngle());
+    
 
     if(RobotBase.isSimulation()) { 
     // SIMULATION CODE
       double dt = 0.02; // Integrate motion (20ms loop)
-
+      
+      //System.out.println("is Simulation");
       m_simPose = m_simPose.exp(
         new Twist2d(
           m_simChassisSpeeds.vxMetersPerSecond * dt,
@@ -99,9 +103,9 @@ public class DriveSubsystem extends SubsystemBase {
 
     } else {
       //ACTUAL ROBOT CODE
-     
+      System.out.println(getRawGyro());
       m_odometry.update(  // Update the odometry in the periodic block
-        Rotation2d.fromDegrees(m_gyro.getAngle()),
+        Rotation2d.fromDegrees(getRawGyro()),
           new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
@@ -112,7 +116,7 @@ public class DriveSubsystem extends SubsystemBase {
        m_field.setRobotPose(getPose());//sets REALpose to smart dashboard
 
     }
-    
+
      
      
   }
@@ -133,7 +137,7 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void resetOdometry(Pose2d pose) {
     m_odometry.resetPosition(
-        Rotation2d.fromDegrees(m_gyro.getAngle()),
+        Rotation2d.fromDegrees(getRawGyro()),
         new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
@@ -161,7 +165,7 @@ public class DriveSubsystem extends SubsystemBase {
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
         fieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
-                Rotation2d.fromDegrees(m_gyro.getAngle()))
+                Rotation2d.fromDegrees(getRawGyro()))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
     setModuleStates(swerveModuleStates); //set the desired states of the modules
 
@@ -228,4 +232,11 @@ public class DriveSubsystem extends SubsystemBase {
   public double getTurnRate() {
     return m_gyro.getRate() * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
   }
+
+  //inverse the gyro output
+  public double getRawGyro() {
+    return m_gyro.getAngle() *-1;
+  }
+
+
 }

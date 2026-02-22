@@ -31,6 +31,7 @@ public class LimelightSubsystem extends SubsystemBase {
     //update tag pose every cycle
     tagPose = LimelightHelpers.getTargetPose3d_CameraSpace("limelight");
 
+   /*
     counter++;
     if (counter > 50) {
     counter = 0;
@@ -40,7 +41,8 @@ public class LimelightSubsystem extends SubsystemBase {
         +", Y: "+getY3d()
         +", Yaw: "+getYaw3d()
         );
-    }
+    } 
+    */
    
   }
 
