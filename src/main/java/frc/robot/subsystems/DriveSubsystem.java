@@ -103,7 +103,7 @@ public class DriveSubsystem extends SubsystemBase {
 
     } else {
       //ACTUAL ROBOT CODE
-      System.out.println(getRawGyro());
+      //System.out.println(getRawGyro());
       m_odometry.update(  // Update the odometry in the periodic block
         Rotation2d.fromDegrees(getRawGyro()),
           new SwerveModulePosition[] {
@@ -213,6 +213,8 @@ public class DriveSubsystem extends SubsystemBase {
   /** Zeroes the heading of the robot. */
   public void zeroHeading() {
     m_gyro.reset();
+    System.out.println("Gyro reset to 0");
+    System.out.println("LOOK AT MEE");
   }
 
   /**

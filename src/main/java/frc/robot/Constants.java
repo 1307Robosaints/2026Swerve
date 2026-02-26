@@ -99,4 +99,16 @@ public final class Constants {
   public static final class NeoMotorConstants {
     public static final double kFreeSpeedRpm = 5676;
   }
+
+  public static final class SonarConstants {
+    public static final double kVoltageToCentimeters = 102.4;
+  
+  }
+
+  public static final class ShooterConstants {
+    public static final int kShooterMotorCanId = 9;
+    public static final double kShooterWheelDiameterMeters = 0.1016; // 4 inches
+    public static final double kShooterWheelCircumferenceMeters = kShooterWheelDiameterMeters * Math.PI;
+    public static final double kShooterMeterPerSecToRPM = (60 / kShooterWheelCircumferenceMeters);
+  }
 }

@@ -8,6 +8,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import java.util.function.IntPredicate;
+import frc.robot.codebases.SonarSensor;
 
 import org.littletonrobotics.junction.Logger;
 import frc.robot.limelightlib.LimelightHelpers;
@@ -19,6 +20,7 @@ public class LimelightSubsystem extends SubsystemBase {
  
   Pose3d tagPose = new Pose3d();
   int counter = 0;
+  SonarSensor m_sonarSensor = new SonarSensor(0);
 
   /** Creates a new LimelightSubsystem. */
   public LimelightSubsystem() {
@@ -30,6 +32,8 @@ public class LimelightSubsystem extends SubsystemBase {
   public void periodic() {
     //update tag pose every cycle
     tagPose = LimelightHelpers.getTargetPose3d_CameraSpace("limelight");
+   // System.out.println("Sonar Distance (inches): " + m_sonarSensor.getDistanceInches());
+  
 
    /*
     counter++;
