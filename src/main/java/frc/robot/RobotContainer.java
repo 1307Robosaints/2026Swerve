@@ -35,6 +35,7 @@ import frc.robot.codebases.controllers.Controller;
 import frc.robot.codebases.controllers.PS4ControllerWrapper;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.subsystems.ShooterSubsystem;
 
 import java.util.List;
 
@@ -48,6 +49,7 @@ public class RobotContainer {
   // The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
   private final LimelightSubsystem m_limelight = new LimelightSubsystem();
+  private final ShooterSubsystem m_shooter = new ShooterSubsystem();
 
   // The driver's controller
   private final REVController m_REVController = new REVController(0);
@@ -80,9 +82,15 @@ public class RobotContainer {
                 true),
             m_robotDrive));
 
+    m_shooter.setDefaultCommand(
+        new RunCommand(
+            () -> m_shooter.setShooterSpeed(getController().getR2Axis()), //right trigger for shooter speed[]
+            m_shooter));
+
     //Smart Dashboard Buttons
-    SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_robotDrive.zeroHeading(), m_robotDrive));
-    
+    SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_robotDrive.zeroHeading()));
+    SmartDashboard.putNumber("Shooter Speed (m/s)", 5); //default speed for the shooter, can be adjusted on the dashboard
+   
   }
 
   /**
@@ -110,6 +118,10 @@ public class RobotContainer {
     new JoystickButton(getControllerHID(), PS4Controller.Button.kSquare.value)
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
+            m_robotDrive));
+     new JoystickButton(getControllerHID(), PS4Controller.Button.kTriangle.value)
+        .whileTrue(new RunCommand(
+            () -> m_shooter.setShooterSpeedPID(SmartDashboard.getNumber("Shooter Speed (m/s)", 5)),
             m_robotDrive));
   }
 

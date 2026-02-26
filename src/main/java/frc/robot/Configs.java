@@ -53,4 +53,23 @@ public final class Configs {
                     .positionWrappingInputRange(0, turningFactor);
         }
     }
+
+    public static final class ShooterSparkMax {
+        public static final SparkMaxConfig ShooterConfig = new SparkMaxConfig();
+
+        static {
+
+            ShooterConfig
+                .idleMode(IdleMode.kCoast)
+                .inverted(true)
+                .smartCurrentLimit(50);
+
+            ShooterConfig.closedLoop
+                .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+                .pid(0.04, 0, 0)
+                .velocityFF(.05) //I need to redo this with diffrernt method later
+                .outputRange(0, 1);
+
+        }
+    }
 }
