@@ -36,6 +36,7 @@ import frc.robot.codebases.controllers.PS4ControllerWrapper;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.conveyerSubsystem;
 
 import java.util.List;
 
@@ -50,23 +51,29 @@ public class RobotContainer {
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
   private final LimelightSubsystem m_limelight = new LimelightSubsystem();
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
+  private final conveyerSubsystem m_conveyer = new conveyerSubsystem();
 
   // The driver's controller
   private final REVController m_REVController = new REVController(0);
   private final PS4ControllerWrapper m_PS4Controller = new PS4ControllerWrapper(0);
   private final XboxControllerWrapper m_XboxController = new XboxControllerWrapper(0);
-  private final SendableChooser<GenericHID> m_controllerChooser = new SendableChooser<>();
+  private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
+  private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
     //Configure the controller chooser
-    m_controllerChooser.setDefaultOption("PS4", m_PS4Controller); //options
-    m_controllerChooser.addOption("REV", m_REVController);
-    m_controllerChooser.addOption("Xbox", m_XboxController);
-    SmartDashboard.putData("Controller Chooser", m_controllerChooser); //put it on the dashboard
-   
+    m_controllerChooserDriver.setDefaultOption("PS4", m_PS4Controller); //options
+    m_controllerChooserDriver.addOption("REV", m_REVController);
+    m_controllerChooserDriver.addOption("Xbox", m_XboxController);
+    SmartDashboard.putData("Controller Chooser", m_controllerChooserDriver); //put it on the dashboard
+    m_controllerChooserDriver.setDefaultOption("PS4", m_PS4Controller); //options
+    m_controllerChooserDriver.addOption("REV", m_REVController);
+    m_controllerChooserDriver.addOption("Xbox", m_XboxController);
+    SmartDashboard.putData("Controller Chooser", m_controllerChooserDriver); //put it on the dashboard
+
     // Configure the button bindings
     configureButtonBindings();
 
@@ -86,6 +93,10 @@ public class RobotContainer {
         new RunCommand(
             () -> m_shooter.setShooterSpeed(getController().getR2Axis()), //right trigger for shooter speed[]
             m_shooter));
+    m_conveyer.setDefaultCommand(
+      new RunCommand(
+        () -> m_conveyer.setConveyerSpeed(getController().getL2Axis()),
+        m_conveyer));
 
     //Smart Dashboard Buttons
     SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_robotDrive.zeroHeading()));

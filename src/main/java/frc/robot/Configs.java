@@ -71,5 +71,21 @@ public final class Configs {
                 .outputRange(0, 1);
 
         }
+        
     }
+
+    public static final class conveyerSparkMax {
+        public static final SparkMaxConfig conveyerConfig = new SparkMaxConfig();
+
+        static {
+
+            conveyerConfig
+                .idleMode(IdleMode.kCoast)
+                .inverted(true)
+                .smartCurrentLimit(50);
+
+        }
+        
+    }
+    
 }
