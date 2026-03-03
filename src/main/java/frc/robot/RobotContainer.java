@@ -168,7 +168,7 @@ public class RobotContainer {
       .whileTrue(new ParallelCommandGroup(
         new RunCommand(() -> m_shooter.setShooterSpeed(0.85), m_shooter),
         new SequentialCommandGroup(
-          new WaitCommand(2.5),
+          new WaitCommand(1.5),
           new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
         )
       ));
