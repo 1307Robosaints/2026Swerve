@@ -87,5 +87,19 @@ public final class Configs {
         }
         
     }
+
+    public static final class climberSparkMax {
+        public static final SparkMaxConfig climberConfig = new SparkMaxConfig();
+
+        static {
+
+            climberConfig
+                .idleMode(IdleMode.kBrake)
+                .inverted(true)
+                .smartCurrentLimit(50);
+
+        }
+        
+    }
     
 }

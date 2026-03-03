@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
+import frc.robot.Configs.climberSparkMax;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
@@ -29,13 +30,18 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.codebases.controllers.Controller;
 import frc.robot.codebases.controllers.PS4ControllerWrapper;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.climberSubsystem;
 import frc.robot.subsystems.conveyerSubsystem;
 
 import java.util.List;
@@ -52,11 +58,15 @@ public class RobotContainer {
   private final LimelightSubsystem m_limelight = new LimelightSubsystem();
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
   private final conveyerSubsystem m_conveyer = new conveyerSubsystem();
+  private final climberSubsystem m_climber = new climberSubsystem();
 
   // The driver's controller
-  private final REVController m_REVController = new REVController(0);
-  private final PS4ControllerWrapper m_PS4Controller = new PS4ControllerWrapper(0);
-  private final XboxControllerWrapper m_XboxController = new XboxControllerWrapper(0);
+  private final REVController m_REVControllerDriver = new REVController(0);
+  private final PS4ControllerWrapper m_PS4ControllerDriver = new PS4ControllerWrapper(0);
+  private final XboxControllerWrapper m_XboxControllerDriver = new XboxControllerWrapper(0);
+  private final REVController m_REVControllerTech = new REVController(1);
+  private final PS4ControllerWrapper m_PS4ControllerTech = new PS4ControllerWrapper(1);
+  private final XboxControllerWrapper m_XboxControllerTech = new XboxControllerWrapper(1);
   private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
   private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
 
@@ -65,14 +75,14 @@ public class RobotContainer {
    */
   public RobotContainer() {
     //Configure the controller chooser
-    m_controllerChooserDriver.setDefaultOption("PS4", m_PS4Controller); //options
-    m_controllerChooserDriver.addOption("REV", m_REVController);
-    m_controllerChooserDriver.addOption("Xbox", m_XboxController);
-    SmartDashboard.putData("Controller Chooser", m_controllerChooserDriver); //put it on the dashboard
-    m_controllerChooserDriver.setDefaultOption("PS4", m_PS4Controller); //options
-    m_controllerChooserDriver.addOption("REV", m_REVController);
-    m_controllerChooserDriver.addOption("Xbox", m_XboxController);
-    SmartDashboard.putData("Controller Chooser", m_controllerChooserDriver); //put it on the dashboard
+    m_controllerChooserDriver.setDefaultOption("PS4", m_PS4ControllerDriver); //options
+    m_controllerChooserDriver.addOption("REV", m_REVControllerDriver);
+    m_controllerChooserDriver.addOption("Xbox", m_XboxControllerDriver);
+    SmartDashboard.putData("Driver (port 0)", m_controllerChooserDriver); //put it on the dashboard
+    m_controllerChooserTech.setDefaultOption("PS4", m_PS4ControllerTech); //options
+    m_controllerChooserTech.addOption("REV", m_REVControllerTech);
+    m_controllerChooserTech.addOption("Xbox", m_XboxControllerTech);
+    SmartDashboard.putData("Tech (port 1)", m_controllerChooserTech); //put it on the dashboard
 
     // Configure the button bindings
     configureButtonBindings();
@@ -83,19 +93,19 @@ public class RobotContainer {
         // Turning is controlled by the X axis of the right stick.
         new RunCommand(
             () -> m_robotDrive.drive(
-                -MathUtil.applyDeadband(getController().getLeftY(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(getController().getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(getController().getRightX(), OIConstants.kDriveDeadband), //right X, they are 
+                -MathUtil.applyDeadband(getControllerDriver().getLeftY(), OIConstants.kDriveDeadband),
+                -MathUtil.applyDeadband(getControllerDriver().getLeftX(), OIConstants.kDriveDeadband),
+                -MathUtil.applyDeadband(getControllerDriver().getRightX(), OIConstants.kDriveDeadband), //right X, they are 
                 true),
             m_robotDrive));
 
     m_shooter.setDefaultCommand(
         new RunCommand(
-            () -> m_shooter.setShooterSpeed(getController().getR2Axis()), //right trigger for shooter speed[]
+            () -> m_shooter.setShooterSpeed(getControllerTech().getR2Axis()), //right trigger for shooter speed[]
             m_shooter));
     m_conveyer.setDefaultCommand(
       new RunCommand(
-        () -> m_conveyer.setConveyerSpeed(getController().getL2Axis()),
+        () -> m_conveyer.setConveyerSpeed(getControllerTech().getL2Axis()),
         m_conveyer));
 
     //Smart Dashboard Buttons
@@ -107,12 +117,20 @@ public class RobotContainer {
   /**
    * Returns the currently selected controller.
    */
-  public GenericHID getControllerHID() {
-    return m_controllerChooser.getSelected();
+  public GenericHID getControllerHIDDriver() {
+    return m_controllerChooserDriver.getSelected();
   }
 
-  public Controller getController() {
-    return (Controller) m_controllerChooser.getSelected();
+  public Controller getControllerDriver() {
+    return (Controller) m_controllerChooserDriver.getSelected();
+  }
+
+  public GenericHID getControllerHIDTech() {
+    return m_controllerChooserTech.getSelected();
+  }
+
+  public Controller getControllerTech() {
+    return (Controller) m_controllerChooserTech.getSelected();
   }
 
   
@@ -126,14 +144,34 @@ public class RobotContainer {
    * {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    new JoystickButton(getControllerHID(), PS4Controller.Button.kSquare.value)
+    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kSquare.value)
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
             m_robotDrive));
-     new JoystickButton(getControllerHID(), PS4Controller.Button.kTriangle.value)
-        .whileTrue(new RunCommand(
+    /**
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kTriangle.value)
+        .whileTrue(new RunCom mand(
             () -> m_shooter.setShooterSpeedPID(SmartDashboard.getNumber("Shooter Speed (m/s)", 5)),
-            m_robotDrive));
+            m_shooter));
+    */
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kTriangle.value)
+      .whileTrue(new StartEndCommand(
+        () ->  m_climber.setclimberSpeed(0.2), 
+        () -> m_climber.stopClimber(), 
+        m_climber));
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCross.value)
+      .whileTrue(new StartEndCommand(
+        () ->  m_climber.setclimberSpeed(-0.2), 
+        () -> m_climber.stopClimber(), 
+        m_climber));
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kSquare.value)
+      .whileTrue(new ParallelCommandGroup(
+        new RunCommand(() -> m_shooter.setShooterSpeed(0.85), m_shooter),
+        new SequentialCommandGroup(
+          new WaitCommand(2.5),
+          new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
+        )
+      ));
   }
 
   /**
