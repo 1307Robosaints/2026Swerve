@@ -35,18 +35,19 @@ public class LimelightSubsystem extends SubsystemBase {
    // System.out.println("Sonar Distance (inches): " + m_sonarSensor.getDistanceInches());
   
 
-   /*
+   
     counter++;
     if (counter > 50) {
     counter = 0;
     System.out.println(
         "Tag?:"+hasTarget()
-        +", X: "+getX3d()
-        +", Y: "+getY3d()
-        +", Yaw: "+getYaw3d()
+        +", X: "+String.format("%.2g%n",getX3d())
+        +", Y: "+String.format("%.2g%n",getY3d())
+        +", Yaw: "+String.format("%.2g%n",getYaw3d())
+        +", Z: "+String.format("%.2g%n",getZ3d())
         );
     } 
-    */
+    
    
   }
 

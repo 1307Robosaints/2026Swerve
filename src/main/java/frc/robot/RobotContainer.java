@@ -18,17 +18,16 @@ import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.PS4Controller.Button;
-import frc.robot.Configs.climberSparkMax;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.codebases.controllers.REVController;
 import frc.robot.codebases.controllers.XboxControllerWrapper;
-import frc.robot.commands.Drive;
+import frc.robot.limelightlib.LimelightHelpers;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -39,7 +38,6 @@ import frc.robot.codebases.controllers.Controller;
 import frc.robot.codebases.controllers.PS4ControllerWrapper;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.climberSubsystem;
 import frc.robot.subsystems.conveyerSubsystem;
@@ -69,7 +67,12 @@ public class RobotContainer {
   private final XboxControllerWrapper m_XboxControllerTech = new XboxControllerWrapper(1);
   private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
   private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
-
+  // rotation controller
+  private final PIDController turnController = new PIDController(0.05, 0, 0); 
+  // distance controller
+  private final PIDController driveController = new PIDController(0.5, 0, 0);
+  // LR controller
+  private final PIDController lrController = new PIDController(0.5, 0, 0);
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -84,21 +87,39 @@ public class RobotContainer {
     m_controllerChooserTech.addOption("Xbox", m_XboxControllerTech);
     SmartDashboard.putData("Tech (port 1)", m_controllerChooserTech); //put it on the dashboard
 
+    
+
     // Configure the button bindings
     configureButtonBindings();
 
-    // Configure default commands
+    // Configure default commands5
     m_robotDrive.setDefaultCommand(
         // The left stick controls translation of the robot.
         // Turning is controlled by the X axis of the right stick.
-        new RunCommand(
+        new ConditionalCommand(
+          new RunCommand(() -> {
+            double turnSpeed = turnController.calculate(m_limelight.getYaw3d(), 0);  // target yaw = 0
+            double driveSpeed = driveController.calculate(m_limelight.getZ3d(), 1.5);// desired distance = 1.5m
+            double lrSpeed = lrController.calculate(m_limelight.getX3d(), 0);
+            m_robotDrive.drive(
+              -driveSpeed, // forward/backward
+              lrSpeed,     // sideways
+             -turnSpeed,   // rotation
+              false         // field-oriented false for auto-align
+            );
+          },
+          m_robotDrive),
+          new RunCommand(
             () -> m_robotDrive.drive(
                 -MathUtil.applyDeadband(getControllerDriver().getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(getControllerDriver().getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(getControllerDriver().getRightX(), OIConstants.kDriveDeadband), //right X, they are 
+                -MathUtil.applyDeadband(getControllerDriver().getRightX(), OIConstants.kDriveDeadband),
                 true),
-            m_robotDrive));
+            m_robotDrive),
+            () -> (m_limelight.hasTarget() && (LimelightHelpers.getFiducialID("limelight") == 10
+            || LimelightHelpers.getFiducialID("limelight") == 26) && getControllerDriver().getSquareButton())));
 
+    
     m_shooter.setDefaultCommand(
         new RunCommand(
             () -> m_shooter.setShooterSpeed(getControllerTech().getR2Axis()), //right trigger for shooter speed[]
@@ -166,7 +187,7 @@ public class RobotContainer {
         m_climber));
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kSquare.value)
       .whileTrue(new ParallelCommandGroup(
-        new RunCommand(() -> m_shooter.setShooterSpeed(0.85), m_shooter),
+        new RunCommand(() -> m_shooter.setShooterSpeed(1.0), m_shooter),
         new SequentialCommandGroup(
           new WaitCommand(1.5),
           new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
