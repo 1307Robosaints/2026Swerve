@@ -43,7 +43,7 @@ public class LimelightSubsystem extends SubsystemBase {
         "Tag?:"+hasTarget()
         +", X: "+String.format("%.2g%n",getX3d())
         +", Y: "+String.format("%.2g%n",getY3d())
-        +", Yaw: "+String.format("%.2g%n",getYaw3d())
+        +", Yaw: "+String.format("%.2g%n",getTagYaw())
         +", Z: "+String.format("%.2g%n",getZ3d())
         );
     } 

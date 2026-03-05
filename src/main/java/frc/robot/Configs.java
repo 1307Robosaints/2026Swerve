@@ -101,5 +101,19 @@ public final class Configs {
         }
         
     }
+
+    public static final class intakeSparkMax {
+        public static final SparkMaxConfig intakeConfig = new SparkMaxConfig();
+
+        static {
+
+            intakeConfig
+                .idleMode(IdleMode.kBrake)
+                .inverted(true)
+                .smartCurrentLimit(50);
+
+        }
+        
+    }
     
 }

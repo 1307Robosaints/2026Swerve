@@ -42,6 +42,7 @@ import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.climberSubsystem;
 import frc.robot.subsystems.conveyerSubsystem;
+import frc.robot.subsystems.intakeSubsystem;
 
 import java.util.List;
 
@@ -58,6 +59,7 @@ public class RobotContainer {
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
   private final conveyerSubsystem m_conveyer = new conveyerSubsystem();
   private final climberSubsystem m_climber = new climberSubsystem();
+  private final intakeSubsystem m_intakeSubsystem = new intakeSubsystem();
 
   // The driver's controller
   private final REVController m_REVControllerDriver = new REVController(0);
@@ -69,11 +71,11 @@ public class RobotContainer {
   private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
   private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
   // rotation controller
-  private final PIDController turnController = new PIDController(0.01, 0, 0.001); 
+  private final PIDController turnController = new PIDController(0.65, 0, 0.01); 
   // distance controller
   private final PIDController driveController = new PIDController(0.4, 0, 0.02);
   // LR controller
-  private final PIDController lrController = new PIDController(0.4, 0, 0.02);
+  private final PIDController lrController = new PIDController(0.6, 0, 0.02);
 
   private final SlewRateLimiter rateLimiter = new SlewRateLimiter(1.5);
 
@@ -111,20 +113,20 @@ public class RobotContainer {
 
         if (goAttackMode) {
             double turnSpeed = turnController.calculate(m_limelight.getTagYaw(), 0);
-            double driveSpeed = driveController.calculate(m_limelight.getZ3d(), 3);
+            double driveSpeed = driveController.calculate(m_limelight.getZ3d(), 2.25);
             double lrSpeed = lrController.calculate(m_limelight.getX3d(), 0);
             driveSpeed = rateLimiter.calculate(driveSpeed);
-            lrSpeed = rateLimiter.calculate(lrSpeed);
-            turnSpeed = rateLimiter.calculate(turnSpeed);
+            //lrSpeed = rateLimiter.calculate(lrSpeed);
+            //turnSpeed = rateLimiter.calculate(turnSpeed);
 
             m_robotDrive.drive(
                 -driveSpeed,
                 lrSpeed,
-                -turnSpeed,
+                turnSpeed,
                 false
             );
 
-            System.out.println("TARGETTING!!!");
+            //System.out.println("TARGETTING!!!");
         } else {
            fieldOriented = SmartDashboard.getBoolean("Field Oriented", true);
             m_robotDrive.drive(
@@ -134,17 +136,12 @@ public class RobotContainer {
                 fieldOriented
             );
 
-            System.out.println("teleop...");
+            //System.out.println("teleop...");
           }
 
       }, m_robotDrive)
     );
 
-    
-    m_shooter.setDefaultCommand(
-        new RunCommand(
-            () -> m_shooter.setShooterSpeed(getControllerTech().getR2Axis()), //right trigger for shooter speed[]
-            m_shooter));
     m_conveyer.setDefaultCommand(
       new RunCommand(
         () -> m_conveyer.setConveyerSpeed(getControllerTech().getL2Axis()),
@@ -190,12 +187,12 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
             m_robotDrive));
-    /**
-    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kTriangle.value)
-        .whileTrue(new RunCom mand(
+    
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
+        .whileTrue(new RunCommand(
             () -> m_shooter.setShooterSpeedPID(SmartDashboard.getNumber("Shooter Speed (m/s)", 5)),
             m_shooter));
-    */
+    
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kTriangle.value)
       .whileTrue(new StartEndCommand(
         () ->  m_climber.setclimberSpeed(0.2), 
@@ -214,6 +211,10 @@ public class RobotContainer {
           new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
         )
       ));
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kR1.value)
+    .onTrue(new InstantCommand(() -> m_intakeSubsystem.rotateIntake(+2.5)));
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kL1.value)
+    .onTrue(new InstantCommand(() -> m_intakeSubsystem.rotateIntake(-2.5)));
   }
 
   /**
