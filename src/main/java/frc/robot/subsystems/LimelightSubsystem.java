@@ -35,9 +35,9 @@ public class LimelightSubsystem extends SubsystemBase {
    // System.out.println("Sonar Distance (inches): " + m_sonarSensor.getDistanceInches());
   
 
-   
+    
     counter++;
-    if (counter > 50) {
+    if (counter >= 50) {
     counter = 0;
     System.out.println(
         "Tag?:"+hasTarget()
@@ -73,6 +73,10 @@ public class LimelightSubsystem extends SubsystemBase {
 
   public double getYaw3d() {
     return Math.atan2(getY3d(), getX3d());
+  }
+
+  public double getTagYaw() {
+    return getTagPose().getRotation().getZ();
   }
 }
 

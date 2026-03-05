@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -68,11 +69,16 @@ public class RobotContainer {
   private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
   private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
   // rotation controller
-  private final PIDController turnController = new PIDController(0.05, 0, 0); 
+  private final PIDController turnController = new PIDController(0.01, 0, 0.001); 
   // distance controller
-  private final PIDController driveController = new PIDController(0.5, 0, 0);
+  private final PIDController driveController = new PIDController(0.4, 0, 0.02);
   // LR controller
-  private final PIDController lrController = new PIDController(0.5, 0, 0);
+  private final PIDController lrController = new PIDController(0.4, 0, 0.02);
+
+  private final SlewRateLimiter rateLimiter = new SlewRateLimiter(1.5);
+
+  private boolean fieldOriented = true;
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -81,43 +87,58 @@ public class RobotContainer {
     m_controllerChooserDriver.setDefaultOption("PS4", m_PS4ControllerDriver); //options
     m_controllerChooserDriver.addOption("REV", m_REVControllerDriver);
     m_controllerChooserDriver.addOption("Xbox", m_XboxControllerDriver);
-    SmartDashboard.putData("Driver (port 0)", m_controllerChooserDriver); //put it on the dashboard
+    SmartDashboard.putData("Driver (port 0 !!!)", m_controllerChooserDriver); //put it on the dashboard
     m_controllerChooserTech.setDefaultOption("PS4", m_PS4ControllerTech); //options
     m_controllerChooserTech.addOption("REV", m_REVControllerTech);
     m_controllerChooserTech.addOption("Xbox", m_XboxControllerTech);
-    SmartDashboard.putData("Tech (port 1)", m_controllerChooserTech); //put it on the dashboard
+    SmartDashboard.putData("Tech (port 1 !!!)", m_controllerChooserTech); //put it on the dashboard
+    SmartDashboard.putBoolean("Field Oriented", true);
 
     
 
     // Configure the button bindings
     configureButtonBindings();
 
-    // Configure default commands5
+    // Configure default commands
     m_robotDrive.setDefaultCommand(
-        // The left stick controls translation of the robot.
-        // Turning is controlled by the X axis of the right stick.
-        new ConditionalCommand(
-          new RunCommand(() -> {
-            double turnSpeed = turnController.calculate(m_limelight.getYaw3d(), 0);  // target yaw = 0
-            double driveSpeed = driveController.calculate(m_limelight.getZ3d(), 1.5);// desired distance = 1.5m
+    new RunCommand(() -> {
+
+        boolean goAttackMode =
+            m_limelight.hasTarget()
+            && (LimelightHelpers.getFiducialID("limelight") == 10
+                || LimelightHelpers.getFiducialID("limelight") == 26)
+            && getControllerDriver().getSquareButton();
+
+        if (goAttackMode) {
+            double turnSpeed = turnController.calculate(m_limelight.getTagYaw(), 0);
+            double driveSpeed = driveController.calculate(m_limelight.getZ3d(), 3);
             double lrSpeed = lrController.calculate(m_limelight.getX3d(), 0);
+            driveSpeed = rateLimiter.calculate(driveSpeed);
+            lrSpeed = rateLimiter.calculate(lrSpeed);
+            turnSpeed = rateLimiter.calculate(turnSpeed);
+
             m_robotDrive.drive(
-              -driveSpeed, // forward/backward
-              lrSpeed,     // sideways
-             -turnSpeed,   // rotation
-              false         // field-oriented false for auto-align
+                -driveSpeed,
+                lrSpeed,
+                -turnSpeed,
+                false
             );
-          },
-          m_robotDrive),
-          new RunCommand(
-            () -> m_robotDrive.drive(
+
+            System.out.println("TARGETTING!!!");
+        } else {
+           fieldOriented = SmartDashboard.getBoolean("Field Oriented", true);
+            m_robotDrive.drive(
                 -MathUtil.applyDeadband(getControllerDriver().getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(getControllerDriver().getLeftX(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(getControllerDriver().getRightX(), OIConstants.kDriveDeadband),
-                true),
-            m_robotDrive),
-            () -> (m_limelight.hasTarget() && (LimelightHelpers.getFiducialID("limelight") == 10
-            || LimelightHelpers.getFiducialID("limelight") == 26) && getControllerDriver().getSquareButton())));
+                fieldOriented
+            );
+
+            System.out.println("teleop...");
+          }
+
+      }, m_robotDrive)
+    );
 
     
     m_shooter.setDefaultCommand(
