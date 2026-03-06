@@ -102,14 +102,33 @@ public final class Configs {
         
     }
 
+    public static final class folderSparkMax {
+        public static final SparkMaxConfig folderConfig = new SparkMaxConfig();
+
+        static {
+
+            folderConfig
+                .idleMode(IdleMode.kBrake)
+                .inverted(true)
+                .smartCurrentLimit(50);
+            folderConfig.closedLoop
+                .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+                .pid(1, 0, 0)
+                .velocityFF(.85) //I need to redo this with diffrernt method later
+                .outputRange(-1, 1);
+
+        }
+        
+    }
+
     public static final class intakeSparkMax {
         public static final SparkMaxConfig intakeConfig = new SparkMaxConfig();
 
         static {
 
             intakeConfig
-                .idleMode(IdleMode.kBrake)
-                .inverted(true)
+                .idleMode(IdleMode.kCoast)
+                .inverted(false)
                 .smartCurrentLimit(50);
 
         }

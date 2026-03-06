@@ -59,7 +59,7 @@ public class RobotContainer {
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
   private final conveyerSubsystem m_conveyer = new conveyerSubsystem();
   private final climberSubsystem m_climber = new climberSubsystem();
-  private final intakeSubsystem m_intakeSubsystem = new intakeSubsystem();
+  private final intakeSubsystem m_intake = new intakeSubsystem();
 
   // The driver's controller
   private final REVController m_REVControllerDriver = new REVController(0);
@@ -187,18 +187,18 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
             m_robotDrive));
-    
+    /* 
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
         .whileTrue(new RunCommand(
             () -> m_shooter.setShooterSpeedPID(SmartDashboard.getNumber("Shooter Speed (m/s)", 5)),
             m_shooter));
-    
-    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kTriangle.value)
+    */
+    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kTriangle.value)
       .whileTrue(new StartEndCommand(
         () ->  m_climber.setclimberSpeed(0.2), 
         () -> m_climber.stopClimber(), 
         m_climber));
-    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCross.value)
+    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kCircle.value)
       .whileTrue(new StartEndCommand(
         () ->  m_climber.setclimberSpeed(-0.2), 
         () -> m_climber.stopClimber(), 
@@ -209,12 +209,18 @@ public class RobotContainer {
         new SequentialCommandGroup(
           new WaitCommand(1.5),
           new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
-        )
-      ));
-    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kR1.value)
-    .onTrue(new InstantCommand(() -> m_intakeSubsystem.rotateIntake(+2.5)));
-    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kL1.value)
-    .onTrue(new InstantCommand(() -> m_intakeSubsystem.rotateIntake(-2.5)));
+        )))
+        .whileFalse(new RunCommand(() -> m_shooter.stopShooter(), m_shooter));
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
+        .whileTrue(new RunCommand(
+            () -> m_intake.setFolderSpeed(-1),
+            m_intake))
+        .whileFalse(new RunCommand(
+            () -> m_intake.setFolderSpeed(0),
+            m_intake));
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCross.value)
+      .whileTrue(new RunCommand(() -> m_intake.setIntakeSpeed(0.5), m_intake))
+      .whileFalse(new RunCommand(() -> m_intake.stopIntake(), m_intake));
   }
 
   /**

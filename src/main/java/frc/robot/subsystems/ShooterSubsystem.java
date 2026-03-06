@@ -64,6 +64,10 @@ public class ShooterSubsystem extends SubsystemBase {
     m_shooterSpark.set(speed);
   }
 
+  public void stopShooter() {
+    m_shooterSpark.set(0);
+  }
+
   public void setShooterSpeedPID(double speed) { //speed in m/s
     m_shooterClosedLoopController.setSetpoint(speed * Constants.ShooterConstants.kShooterMeterPerSecToRPM, SparkMax.ControlType.kVelocity);
   }
