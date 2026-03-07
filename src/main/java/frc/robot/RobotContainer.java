@@ -195,13 +195,13 @@ public class RobotContainer {
     */
     new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kTriangle.value)
       .whileTrue(new StartEndCommand(
-        () ->  m_climber.setclimberSpeed(0.2), 
+        () ->  m_climber.setclimberSpeed(0.5), 
         () -> m_climber.stopClimber(), 
         m_climber));
-    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kCircle.value)
+    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kCross.value)
       .whileTrue(new StartEndCommand(
-        () ->  m_climber.setclimberSpeed(-0.2), 
-        () -> m_climber.stopClimber(), 
+        () ->  m_climber.setclimberSpeed(-0.5), 
+        () -> m_climber.stopClimber(),  
         m_climber));
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kSquare.value)
       .whileTrue(new ParallelCommandGroup(
@@ -213,7 +213,7 @@ public class RobotContainer {
         .whileFalse(new RunCommand(() -> m_shooter.stopShooter(), m_shooter));
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
         .whileTrue(new RunCommand(
-            () -> m_intake.setFolderSpeed(-1),
+            () -> m_intake.setFolderSpeed(1),
             m_intake))
         .whileFalse(new RunCommand(
             () -> m_intake.setFolderSpeed(0),
