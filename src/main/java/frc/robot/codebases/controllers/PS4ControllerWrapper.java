@@ -37,12 +37,12 @@ public class PS4ControllerWrapper extends PS4Controller implements Controller {
 
     @Override
     public double getL2Axis() {
-        return super.getL2Axis();
+        return (super.getL2Axis() + 1) / 2.0;
     }
 
     @Override
     public double getR2Axis() {
-        return super.getR2Axis();
+        return (super.getR2Axis() + 1) / 2.0;
     }
 
     // ---------------- Square ----------------
