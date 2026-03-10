@@ -35,7 +35,7 @@ public class LimelightSubsystem extends SubsystemBase {
    // System.out.println("Sonar Distance (inches): " + m_sonarSensor.getDistanceInches());
   
 
-    
+    /* 
     counter++;
     if (counter >= 50) {
     counter = 0;
@@ -47,7 +47,7 @@ public class LimelightSubsystem extends SubsystemBase {
         +", Z: "+String.format("%.2g%n",getZ3d())
         );
     } 
-    
+    */
    
   }
 

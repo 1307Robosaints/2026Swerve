@@ -39,6 +39,7 @@ import frc.robot.codebases.controllers.Controller;
 import frc.robot.codebases.controllers.PS4ControllerWrapper;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.climberSubsystem;
 import frc.robot.subsystems.conveyerSubsystem;
@@ -241,17 +242,23 @@ public class RobotContainer {
         // Start at the origin facing the +X direction
         new Pose2d(0, 0, new Rotation2d(0)),
         // Pass through these two interior waypoints, making an 's' curve path
-        List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
+       List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
         // End 3 meters straight ahead of where we started, facing forward
         new Pose2d(3, 0, new Rotation2d(0)),
         config);
+      Trajectory basicAutoTrajectory = TrajectoryGenerator.generateTrajectory(
+        new Pose2d(0,0,new Rotation2d(0)),
+        List.of(),
+        new Pose2d(1,-0.15,new Rotation2d(3)),
+        config
+      );
 
     var thetaController = new ProfiledPIDController(
         AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
     SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-        exampleTrajectory,
+        basicAutoTrajectory,
         m_robotDrive::getPose, // Functional interface to feed supplier
         DriveConstants.kDriveKinematics,
 
@@ -263,9 +270,26 @@ public class RobotContainer {
         m_robotDrive);
 
     // Reset odometry to the starting pose of the trajectory.
-    m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
-
-    // Run path following command, then stop at the end.
-    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+    m_robotDrive.resetOdometry(basicAutoTrajectory.getInitialPose());
+    //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+    return new SequentialCommandGroup(
+      new ParallelRaceGroup(
+        new RunCommand(() -> m_shooter.stopShooter(), m_shooter),
+        new RunCommand(() -> m_conveyer.setConveyerSpeed(0), m_conveyer),
+        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false))
+      ),
+      new ParallelDeadlineGroup(
+        new RunCommand(() -> m_shooter.setShooterSpeed(1.0), m_shooter),
+        new SequentialCommandGroup(
+          new WaitCommand(1.5),
+          new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
+        ),
+        new WaitCommand(4)
+      ),
+      new ParallelCommandGroup(
+        new RunCommand(() -> m_shooter.stopShooter(), m_shooter),
+        new RunCommand(() -> m_conveyer.setConveyerSpeed(0), m_conveyer)
+      )
+    );
   }
 }
