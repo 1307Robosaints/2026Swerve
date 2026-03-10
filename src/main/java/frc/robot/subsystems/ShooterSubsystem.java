@@ -41,8 +41,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     m_shooterClosedLoopConfig
       .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-      .pid(0.04, 0, 0)
-      .velocityFF(.05) //I need to redo this with diffrernt method later
+      .pid(0.04, 0, 0.005)
       .outputRange(0, 1);
 
     m_shooterSpark = new SparkMax(9, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
@@ -65,6 +64,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
   public void setShooterSpeed(double speed) { //out of voltage -1 to 1
     m_shooterSpark.set(speed);
+  }
+
+  public void stopShooter() {
+    m_shooterSpark.set(0);
   }
 
   public void setShooterSpeedPID(double speed) { //speed in m/s
