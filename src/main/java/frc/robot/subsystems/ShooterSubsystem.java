@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import com.revrobotics.spark.config.ClosedLoopConfig;
 import frc.robot.Configs;
 import frc.robot.Constants;
+import frc.robot.commands.Drive;
 
 
 
@@ -30,6 +31,7 @@ public class ShooterSubsystem extends SubsystemBase {
   private final RelativeEncoder m_shooterEncoder;
   private final SparkClosedLoopController m_shooterClosedLoopController;
   private final ClosedLoopConfig m_shooterClosedLoopConfig = new ClosedLoopConfig();
+;
 
   
   /** Creates a new ShooterSubsystem. */
@@ -61,12 +63,16 @@ public class ShooterSubsystem extends SubsystemBase {
    
   }
 
-  public void setShooterSpeed(double speed) {
+  public void setShooterSpeed(double speed) { //out of voltage -1 to 1
     m_shooterSpark.set(speed);
   }
 
   public void setShooterSpeedPID(double speed) { //speed in m/s
-    m_shooterClosedLoopController.setSetpoint(speed * Constants.ShooterConstants.kShooterMeterPerSecToRPM, SparkMax.ControlType.kVelocity);
+    m_shooterClosedLoopController.setSetpoint(speed, SparkMax.ControlType.kVelocity);
+  }
+
+  public void stopShooter() {
+    m_shooterSpark.stopMotor();
   }
 
 }
