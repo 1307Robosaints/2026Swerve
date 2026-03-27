@@ -55,16 +55,28 @@ public final class Configs {
     }
 
     public static final class ShooterSparkMax {
-        public static final SparkMaxConfig ShooterConfig = new SparkMaxConfig();
+        public static final SparkMaxConfig ShooterConfig1 = new SparkMaxConfig();
+        public static final SparkMaxConfig ShooterConfig2 = new SparkMaxConfig();
 
         static {
 
-            ShooterConfig
+            ShooterConfig1
                 .idleMode(IdleMode.kCoast)
                 .inverted(true)
                 .smartCurrentLimit(50);
 
-            ShooterConfig.closedLoop
+            ShooterConfig1.closedLoop
+                .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+                .pid(0.04, 0, 0)
+                .velocityFF(.05) //I need to redo this with diffrernt method later
+                .outputRange(0, 1);
+
+            ShooterConfig2
+                .idleMode(IdleMode.kCoast)
+                .inverted(true)
+                .smartCurrentLimit(50);
+
+            ShooterConfig2.closedLoop
                 .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
                 .pid(0.04, 0, 0)
                 .velocityFF(.05) //I need to redo this with diffrernt method later
@@ -113,7 +125,7 @@ public final class Configs {
                 .smartCurrentLimit(50);
             folderConfig.closedLoop
                 .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                .pid(1, 0, 0)
+                .pid(0.15, 0, 0.005)
                 .velocityFF(.85) //I need to redo this with diffrernt method later
                 .outputRange(-1, 1);
 

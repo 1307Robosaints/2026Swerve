@@ -25,8 +25,13 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.codebases.controllers.REVController;
 import frc.robot.codebases.controllers.XboxControllerWrapper;
+import frc.robot.commands.Climb;
+import frc.robot.commands.Fold;
+import frc.robot.commands.Intake;
+import frc.robot.commands.Shoot;
 import frc.robot.limelightlib.LimelightHelpers;
 import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.subsystems.FolderSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
@@ -42,10 +47,10 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.climberSubsystem;
-import frc.robot.subsystems.conveyerSubsystem;
-import frc.robot.subsystems.intakeSubsystem;
-
+import frc.robot.subsystems.ClimberSubsystem;
+import frc.robot.subsystems.ConveyerSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import java.util.List;
 
 /*
@@ -55,23 +60,30 @@ import java.util.List;
  * (including subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems
-  private final DriveSubsystem m_robotDrive = new DriveSubsystem();
+
+//SUBSYSTEMS
+  private final DriveSubsystem m_driver = new DriveSubsystem();
   private final LimelightSubsystem m_limelight = new LimelightSubsystem();
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
-  private final conveyerSubsystem m_conveyer = new conveyerSubsystem();
-  private final climberSubsystem m_climber = new climberSubsystem();
-  private final intakeSubsystem m_intake = new intakeSubsystem();
+  private final ConveyerSubsystem m_conveyer = new ConveyerSubsystem();
+  private final ClimberSubsystem m_climber = new ClimberSubsystem();
+  private final IntakeSubsystem m_intake = new IntakeSubsystem();
+  private final FolderSubsystem m_folder = new FolderSubsystem();
 
-  // The driver's controller
+//CONTROLLER
+  //Driving Controller
   private final REVController m_REVControllerDriver = new REVController(0);
   private final PS4ControllerWrapper m_PS4ControllerDriver = new PS4ControllerWrapper(0);
   private final XboxControllerWrapper m_XboxControllerDriver = new XboxControllerWrapper(0);
+  private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
+
+  //Tech Controller
   private final REVController m_REVControllerTech = new REVController(1);
   private final PS4ControllerWrapper m_PS4ControllerTech = new PS4ControllerWrapper(1);
   private final XboxControllerWrapper m_XboxControllerTech = new XboxControllerWrapper(1);
-  private final SendableChooser<GenericHID> m_controllerChooserDriver = new SendableChooser<>();
   private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
+
+//AUTO
   // rotation controller
   private final PIDController turnController = new PIDController(0.65, 0, 0.01); 
   // distance controller
@@ -87,11 +99,15 @@ public class RobotContainer {
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
-    //Configure the controller chooser
+
+  // Intialize choosers for the controllers 
+    //driver controller
     m_controllerChooserDriver.setDefaultOption("PS4", m_PS4ControllerDriver); //options
     m_controllerChooserDriver.addOption("REV", m_REVControllerDriver);
     m_controllerChooserDriver.addOption("Xbox", m_XboxControllerDriver);
     SmartDashboard.putData("Driver (port 0 !!!)", m_controllerChooserDriver); //put it on the dashboard
+
+    //tech controller
     m_controllerChooserTech.setDefaultOption("PS4", m_PS4ControllerTech); //options
     m_controllerChooserTech.addOption("REV", m_REVControllerTech);
     m_controllerChooserTech.addOption("Xbox", m_XboxControllerTech);
@@ -99,12 +115,11 @@ public class RobotContainer {
     SmartDashboard.putBoolean("Field Oriented", true);
 
     
-
     // Configure the button bindings
     configureButtonBindings();
 
     // Configure default commands
-    m_robotDrive.setDefaultCommand(
+    m_driver.setDefaultCommand(
     new RunCommand(() -> {
 
         boolean goAttackMode =
@@ -121,7 +136,7 @@ public class RobotContainer {
             //lrSpeed = rateLimiter.calculate(lrSpeed);
             //turnSpeed = rateLimiter.calculate(turnSpeed);
 
-            m_robotDrive.drive(
+            m_driver.drive(
                 -driveSpeed,
                 lrSpeed,
                 turnSpeed,
@@ -130,8 +145,8 @@ public class RobotContainer {
 
             //System.out.println("TARGETTING!!!");
         } else {
-           fieldOriented = SmartDashboard.getBoolean("Field Oriented", true);
-            m_robotDrive.drive(
+           //fieldOriented = SmartDashboard.getBoolean("Field Oriented", true);
+            m_driver.drive(
                 -MathUtil.applyDeadband(getControllerDriver().getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(getControllerDriver().getLeftX(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(getControllerDriver().getRightX(), OIConstants.kDriveDeadband),
@@ -141,7 +156,8 @@ public class RobotContainer {
             //System.out.println("teleop...");
           }
 
-      }, m_robotDrive)
+      }, m_driver)
+
     );
 
     m_conveyer.setDefaultCommand(
@@ -150,8 +166,8 @@ public class RobotContainer {
         m_conveyer));
 
     //Smart Dashboard Buttons
-    SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_robotDrive.zeroHeading()));
-    SmartDashboard.putNumber("Shooter Speed (m/s)", 5); //default speed for the shooter, can be adjusted on the dashboard
+    SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_driver.zeroHeading()));
+    SmartDashboard.putNumber("Shooter Speed", 1); //default speed for the shooter, can be adjusted on the dashboard
    
   }
 
@@ -175,6 +191,8 @@ public class RobotContainer {
   }
 
   
+  //BUTONS
+
   /**
    * Use this method to define your button->command mappings. Buttons can be
    * created by
@@ -185,44 +203,40 @@ public class RobotContainer {
    * {@link JoystickButton}.
    */
   private void configureButtonBindings() {
+    
+    //X Wheel Formation
     new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kSquare.value)
         .whileTrue(new RunCommand(
-            () -> m_robotDrive.setX(),
-            m_robotDrive));
+            () -> m_driver.setX(),
+            m_driver));
+
     /* 
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
         .whileTrue(new RunCommand(
             () -> m_shooter.setShooterSpeedPID(SmartDashboard.getNumber("Shooter Speed (m/s)", 5)),
             m_shooter));
     */
+
+    //Climb Up
     new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kTriangle.value)
-      .whileTrue(new StartEndCommand(
-        () ->  m_climber.setclimberSpeed(0.5), 
-        () -> m_climber.stopClimber(), 
-        m_climber));
+      .whileTrue(new Climb(m_climber, true));
+
+    //Climb Down
     new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kCross.value)
-      .whileTrue(new StartEndCommand(
-        () ->  m_climber.setclimberSpeed(-0.5), 
-        () -> m_climber.stopClimber(),  
-        m_climber));
+      .whileTrue(new Climb(m_climber, false));
+    
+    //Shoot
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kSquare.value)
-      .whileTrue(new ParallelCommandGroup(
-        new RunCommand(() -> m_shooter.setShooterSpeed(1.0), m_shooter),
-        new SequentialCommandGroup(
-          new WaitCommand(1.5),
-          new RunCommand(() -> m_conveyer.setConveyerSpeed(0.85), m_conveyer)
-        )))
-        .whileFalse(new RunCommand(() -> m_shooter.stopShooter(), m_shooter));
+      .whileTrue(new Shoot(m_shooter, m_conveyer, SmartDashboard.getNumber("Shooter Speed", 1)));
+
+    //Put Folder Down
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
-        .whileTrue(new RunCommand(
-            () -> m_intake.setFolderSpeed(1),
-            m_intake))
-        .whileFalse(new RunCommand(
-            () -> m_intake.setFolderSpeed(0),
-            m_intake));
+        .whileTrue(new Fold(m_folder, false));
+
+    //Intake
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCross.value)
-      .whileTrue(new RunCommand(() -> m_intake.setIntakeSpeed(0.5), m_intake))
-      .whileFalse(new RunCommand(() -> m_intake.stopIntake(), m_intake));
+      .whileTrue(new Intake(m_intake, true));
+
   }
 
   /**
@@ -247,10 +261,12 @@ public class RobotContainer {
         // End 3 meters straight ahead of where we started, facing forward
         new Pose2d(3, 0, new Rotation2d(0)),
         config);
+      
+      //Our Trajectory  
       Trajectory basicAutoTrajectory = TrajectoryGenerator.generateTrajectory(
         new Pose2d(0,0,new Rotation2d(0)),
         List.of(),
-        new Pose2d(1,-0.15,new Rotation2d(3)),
+        new Pose2d(1,1,new Rotation2d(3)),
         config
       );
 
@@ -260,24 +276,26 @@ public class RobotContainer {
 
     SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
         basicAutoTrajectory,
-        m_robotDrive::getPose, // Functional interface to feed supplier
+        m_driver::getPose, // Functional interface to feed supplier
         DriveConstants.kDriveKinematics,
 
         // Position controllers
         new PIDController(AutoConstants.kPXController, 0, 0),
         new PIDController(AutoConstants.kPYController, 0, 0),
         thetaController,
-        m_robotDrive::setModuleStates,
-        m_robotDrive);
+        m_driver::setModuleStates,
+        m_driver);
 
     // Reset odometry to the starting pose of the trajectory.
-    m_robotDrive.resetOdometry(basicAutoTrajectory.getInitialPose());
+    m_driver.resetOdometry(basicAutoTrajectory.getInitialPose());
     //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+
+    //returns the actual commands to be ran
     return new SequentialCommandGroup(
       new ParallelRaceGroup(
         new RunCommand(() -> m_shooter.stopShooter(), m_shooter),
         new RunCommand(() -> m_conveyer.setConveyerSpeed(0), m_conveyer),
-        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false))
+        swerveControllerCommand.andThen(() -> m_driver.drive(0, 0, 0, false))
       ),
       new ParallelDeadlineGroup(
         new RunCommand(() -> m_shooter.setShooterSpeed(1.0), m_shooter),

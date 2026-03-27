@@ -22,33 +22,14 @@ import frc.robot.Constants;
 
 
 
-public class intakeSubsystem extends SubsystemBase {
+public class IntakeSubsystem extends SubsystemBase {
   
-  private final SparkMax m_folderSpark;
+
   private final SparkMax m_intakeSpark;
-
-
-  private final RelativeEncoder m_folderEncoder;
-  private final SparkClosedLoopController m_folderClosedLoopController;
-  private final ClosedLoopConfig m_folderClosedLoopConfig = new ClosedLoopConfig();
 
   
   /** Creates a new folderSubsystem. */
-  public intakeSubsystem() {
-    
-    //folder:
-
-    m_folderClosedLoopConfig
-      .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-      .pid(0.15, 0, 0.005)
-      .outputRange(0, 1);
-
-    m_folderSpark = new SparkMax(12, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
-    m_folderSpark.configure(Configs.folderSparkMax.folderConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-
-    m_folderEncoder = m_folderSpark.getEncoder();
-
-    m_folderClosedLoopController = m_folderSpark.getClosedLoopController();
+  public IntakeSubsystem() {
     
       //intake:
 
@@ -64,19 +45,7 @@ public class intakeSubsystem extends SubsystemBase {
    
   }
 
-  //folder:
-
-  public void setFolderSpeed(double speed) {
-    m_folderSpark.set(speed);
-  }
-
-  public void stopFolder() {
-    m_folderSpark.set(0);
-  }
-
-  public void setFolderPosition(double position) { //speed in m/s
-    m_folderClosedLoopController.setSetpoint(position, SparkMax.ControlType.kPosition);
-  }
+  
 
   //intake:
 

@@ -22,12 +22,12 @@ import frc.robot.Constants;
 
 
 
-public class conveyerSubsystem extends SubsystemBase {
+public class ConveyerSubsystem extends SubsystemBase {
   
   private final SparkMax m_conveyerSpark;
   
   /** Creates a new conveyerSubsystem. */
-  public conveyerSubsystem() {
+  public ConveyerSubsystem() {
 
     m_conveyerSpark = new SparkMax(10, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
     m_conveyerSpark.configure(Configs.conveyerSparkMax.conveyerConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -41,6 +41,10 @@ public class conveyerSubsystem extends SubsystemBase {
 
   public void setConveyerSpeed(double speed) {
     m_conveyerSpark.set(speed);
+  }
+
+  public void stopConveyer() {
+    m_conveyerSpark.stopMotor();
   }
 
 }

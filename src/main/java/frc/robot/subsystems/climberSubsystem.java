@@ -22,12 +22,12 @@ import frc.robot.Constants;
 
 
 
-public class climberSubsystem extends SubsystemBase {
+public class ClimberSubsystem extends SubsystemBase {
   
   private final SparkMax m_climberSpark;
   
   /** Creates a new climberSubsystem. */
-  public climberSubsystem() {
+  public ClimberSubsystem() {
 
     m_climberSpark = new SparkMax(11, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
     m_climberSpark.configure(Configs.climberSparkMax.climberConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);

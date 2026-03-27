@@ -117,4 +117,23 @@ public final class Constants {
     
   }
 
+  public static final class IntakeConstants {
+    
+    public static final double kIntakeSpeed = .5;
+  }
+
+  public static final class FolderConstants {
+
+    public static final double kFoldUpSpeed = 1;
+    public static final double kFoldDownSpeed = -.25;
+  }
+
+  
+
+  public static final class ConveyerConstants {
+
+    public static final double kConveyerSpeed = .85;
+
+  }
+
 }

@@ -25,32 +25,32 @@ import frc.robot.commands.Drive;
 
 public class ShooterSubsystem extends SubsystemBase {
   
-  private final SparkMax m_shooterSpark;
+  private final SparkMax m_shooterSpark1;
+  private final SparkMax m_shooterSpark2;
 
+  private final RelativeEncoder m_shooterEncoder1;
+  private final RelativeEncoder m_shooterEncoder2;
 
-  private final RelativeEncoder m_shooterEncoder;
-  private final SparkClosedLoopController m_shooterClosedLoopController;
-  private final ClosedLoopConfig m_shooterClosedLoopConfig = new ClosedLoopConfig();
-;
+  private final SparkClosedLoopController m_shooterClosedLoopController1;
+  private final SparkClosedLoopController m_shooterClosedLoopController2;
+ 
 
   
   /** Creates a new ShooterSubsystem. */
   public ShooterSubsystem() {
     
 
+    m_shooterSpark1 = new SparkMax(9, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
+    m_shooterSpark2 = new SparkMax(14, SparkMax.MotorType.kBrushless);
+    m_shooterSpark1.configure(Configs.ShooterSparkMax.ShooterConfig1, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    m_shooterSpark2.configure(Configs.ShooterSparkMax.ShooterConfig2, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    m_shooterClosedLoopConfig
-      .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-      .pid(0.04, 0, 0.005)
-      .outputRange(0, 1);
 
-    m_shooterSpark = new SparkMax(9, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
-    m_shooterSpark.configure(Configs.ShooterSparkMax.ShooterConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    m_shooterEncoder1 = m_shooterSpark1.getEncoder();
+    m_shooterEncoder2 = m_shooterSpark2.getEncoder();
 
-    m_shooterEncoder = m_shooterSpark.getEncoder();
-
-    m_shooterClosedLoopController = m_shooterSpark.getClosedLoopController();
-    
+    m_shooterClosedLoopController1 = m_shooterSpark1.getClosedLoopController();
+    m_shooterClosedLoopController2 = m_shooterSpark2.getClosedLoopController();
       
 
   }
@@ -58,24 +58,29 @@ public class ShooterSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
 
-    
    
   }
 
   public void setShooterSpeed(double speed) { //out of voltage -1 to 1
-    m_shooterSpark.set(speed);
+    //m_shooterSpark1.set(speed);
+    m_shooterSpark2.set(speed);
   }
 
-  public void stopShooter() {
-    m_shooterSpark.set(0);
+  public void setShooterLeft(double speed) { //out of voltage -1 to 1
+    m_shooterSpark2.set(speed);
+  }
+
+  public void setShooterRight(double speed) { //out of voltage -1 to 1
+    m_shooterSpark1.set(speed);
   }
 
   public void setShooterSpeedPID(double speed) { //speed in m/s
-    m_shooterClosedLoopController.setSetpoint(speed, SparkMax.ControlType.kVelocity);
+    m_shooterClosedLoopController1.setSetpoint(speed, SparkMax.ControlType.kVelocity);
+    m_shooterClosedLoopController2.setSetpoint(speed, SparkMax.ControlType.kVelocity);
   }
 
   public void stopShooter() {
-    m_shooterSpark.stopMotor();
+    m_shooterSpark1.stopMotor();
   }
 
 }
