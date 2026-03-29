@@ -73,7 +73,7 @@ public final class Configs {
 
             ShooterConfig2
                 .idleMode(IdleMode.kCoast)
-                .inverted(true)
+                .inverted(false)
                 .smartCurrentLimit(50);
 
             ShooterConfig2.closedLoop

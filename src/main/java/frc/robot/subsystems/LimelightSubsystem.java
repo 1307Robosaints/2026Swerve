@@ -13,14 +13,23 @@ import frc.robot.codebases.SonarSensor;
 import org.littletonrobotics.junction.Logger;
 import frc.robot.limelightlib.LimelightHelpers;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 
 
 public class LimelightSubsystem extends SubsystemBase {
  
-  Pose3d tagPose = new Pose3d();
-  int counter = 0;
-  SonarSensor m_sonarSensor = new SonarSensor(0);
+  // --------------------
+  // Adjustable variables
+  // --------------------
+  public int redTagId = 10;   // AprilTag ID for red
+  public int blueTagId = 26;  // AprilTag ID for blue
+  public double txSetpoint = 0.0;  // desired horizontal offset (degrees)
+  public double tySetpoint = 0.0;  // desired vertical offset (degrees)
+  public double taSetpoint = 1.0;  // desired target area (or 0 if ignoring)
+  public double yawSetpoint = 0.0; // desired yaw (degrees)
+
+  private String tableName = "limelight";
 
   /** Creates a new LimelightSubsystem. */
   public LimelightSubsystem() {
@@ -30,54 +39,55 @@ public class LimelightSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    //update tag pose every cycle
-    tagPose = LimelightHelpers.getTargetPose3d_CameraSpace("limelight");
-   // System.out.println("Sonar Distance (inches): " + m_sonarSensor.getDistanceInches());
   
-
-    /* 
-    counter++;
-    if (counter >= 50) {
-    counter = 0;
-    System.out.println(
-        "Tag?:"+hasTarget()
-        +", X: "+String.format("%.2g%n",getX3d())
-        +", Y: "+String.format("%.2g%n",getY3d())
-        +", Yaw: "+String.format("%.2g%n",getTagYaw())
-        +", Z: "+String.format("%.2g%n",getZ3d())
-        );
-    } 
-    */
    
   }
 
-  public Pose3d getTagPose() {
-      return tagPose;
-  }
+ /** Returns the NetworkTables "tx" value (horizontal offset) */
+    public double getTx() {
+        return NetworkTableInstance.getDefault()
+                .getTable(tableName)
+                .getEntry("tx").getDouble(0);
+    }
 
-  public boolean hasTarget() {
-    return LimelightHelpers.getTV("limelight");
-  }
+    /** Returns the NetworkTables "ty" value (vertical offset) */
+    public double getTy() {
+        return NetworkTableInstance.getDefault()
+                .getTable(tableName)
+                .getEntry("ty").getDouble(0);
+    }
 
-  public double getX3d() {
-    return getTagPose().getTranslation().getX();
-  }
+    /** Returns the NetworkTables "ta" value (target area) */
+    public double getTa() {
+        return NetworkTableInstance.getDefault()
+                .getTable(tableName)
+                .getEntry("ta").getDouble(0);
+    }
 
-  public double getY3d() {
-    return getTagPose().getTranslation().getY();
-  }
+    /** Returns the NetworkTables "yaw" value from your Limelight lib */
+    public double getYaw() {
+        return NetworkTableInstance.getDefault()
+                .getTable(tableName)
+                .getEntry("yaw").getDouble(0);
+    }
 
-  public double getZ3d() {
-    return getTagPose().getTranslation().getZ();
-  }
+    /** Returns the current detected AprilTag ID */
+    public int getTargetId() {
+        return (int) NetworkTableInstance.getDefault()
+                .getTable(tableName)
+                .getEntry("tid").getDouble(-1);
+    }
 
-  public double getYaw3d() {
-    return Math.atan2(getY3d(), getX3d());
-  }
+    /** Returns the tag ID for the current alliance (red/blue) */
+    public int getTargetIdForAlliance(boolean red) {
+        return red ? redTagId : blueTagId;
+    }
 
-  public double getTagYaw() {
-    return getTagPose().getRotation().getZ();
-  }
+    /** Check if we see the desired target for our alliance */
+    public boolean hasTarget(boolean redAlliance) {
+        return getTargetId() == getTargetIdForAlliance(redAlliance);
+    }
+
 }
 
  

@@ -20,11 +20,18 @@ import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import frc.robot.Constants.DriveConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.math.geometry.Twist2d;
 import org.littletonrobotics.junction.Logger;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
 
@@ -81,6 +88,41 @@ public class DriveSubsystem extends SubsystemBase {
 
     //set Gyro to 0 at the start of the program
     m_gyro.reset();
+
+
+    //PATH PLANNER
+    RobotConfig config = null;
+    try{
+      config = RobotConfig.fromGUISettings();
+    } catch (Exception e) {
+      // Handle exception as needed
+      e.printStackTrace();
+    }
+
+    // Configure AutoBuilder last
+    AutoBuilder.configure(
+            this::getPose, // Robot pose supplier
+            this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+            new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
+                    new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
+                    new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
+            ),
+            config, // The robot configuration
+            () -> {
+              // Boolean supplier that controls when the path will be mirrored for the red alliance
+              // This will flip the path being followed to the red side of the field.
+              // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+              var alliance = DriverStation.getAlliance();
+              if (alliance.isPresent()) {
+                return alliance.get() == DriverStation.Alliance.Red;
+              }
+              return false;
+            },
+            this // Reference to this subsystem to set requirements
+    );
   }
 
   @Override
@@ -178,6 +220,27 @@ public class DriveSubsystem extends SubsystemBase {
     }
   }
 
+ public void driveRobotRelative(ChassisSpeeds speeds) {
+  // Convert chassis speeds to individual module states
+  SwerveModuleState[] moduleStates =
+      DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds);
+
+  // Normalize speeds so no wheel exceeds max
+  SwerveDriveKinematics.desaturateWheelSpeeds(
+      moduleStates,
+      DriveConstants.kMaxSpeedMetersPerSecond
+  );
+
+  // Send to modules
+  setModuleStates(moduleStates);
+
+  // Simulation support (optional but recommended)
+  if (RobotBase.isSimulation()) {
+    m_simChassisSpeeds = speeds;
+  }
+}
+  
+
   /**
    * Sets the wheels into an X formation to prevent movement.
    */
@@ -240,5 +303,13 @@ public class DriveSubsystem extends SubsystemBase {
     return m_gyro.getAngle() *-1;
   }
 
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+  return DriveConstants.kDriveKinematics.toChassisSpeeds(
+      m_frontLeft.getState(),
+      m_frontRight.getState(),
+      m_rearLeft.getState(),
+      m_rearRight.getState()
+  );
 
+}
 }

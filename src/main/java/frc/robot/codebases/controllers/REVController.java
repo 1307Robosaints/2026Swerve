@@ -83,9 +83,9 @@ public class REVController extends GenericHID implements Sendable, Controller {
     /** Right X axis. */
     kRightX(4),
     /** Right Y axis. */
-    kRightY(5),
+    kRightY(6),
     /** Left trigger 2. */
-    kL2(2),
+    kL2(5),
     /** Right trigger 2. */
     kR2(3);
 

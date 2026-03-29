@@ -11,7 +11,11 @@
 // ROBOTBUILDER TYPE: Command.
 
 package frc.robot.commands;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.DriveSubsystem;
@@ -19,124 +23,103 @@ import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.codebases.AutoDrive;
 import frc.robot.codebases.PositionChecker;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.DriverStation;
 
 
 
 
 public class AssistedShoot extends Command {
 
-    private final DriveSubsystem m_driveSubsystem;
-    private final ShooterSubsystem m_shooterSubsystem;
-    private final LimelightSubsystem m_limelightSubsystem;
+    private final DriveSubsystem drive;
+    private final LimelightSubsystem limelight;
 
-    private double[] desiredPose = new double[4];
-    private double desiredX;
-    private double desiredY;
-    private double desiredTheta;
-    private double desiredSpeed;
+    private boolean redAlliance;
+    private Alliance alliance;
 
-    private double targetDistance;
+    // --------------------
+    // PID Controllers
+    // --------------------
+    private final PIDController xController;     // forward/back
+    private final PIDController yController;     // strafe
+    private final PIDController yawController;   // rotation
 
-    private double m_tX;
-    private double m_tY;
+    // PID tuning variables (adjust as needed)
+    private final double kP_X = 0.5;   // forward/back speed gain
+    private final double kP_Y = 0.5;   // strafe speed gain
+    private final double kP_Yaw = 0.03; // rotation gain (degrees)
 
-    private Pose2d m_botPose;
+    private final double xTolerance = 0.01; // meters/sec tolerance or arbitrary units
+    private final double yTolerance = 0.01;
+    private final double yawTolerance = 1.0; // degrees
+
+    public AssistedShoot(
+          DriveSubsystem drive,
+            LimelightSubsystem limelight) {
+        this.drive = drive;
+        this.limelight = limelight;
+
+        // PID controllers using limelight setpoints
+        this.xController = new PIDController(kP_X, 0.0, 0.0);
+        this.yController = new PIDController(kP_Y, 0.0, 0.0);
+        this.yawController = new PIDController(kP_Yaw, 0.0, 0.0);
+
+        this.xController.setTolerance(xTolerance);
+        this.yController.setTolerance(yTolerance);
+        this.yawController.setTolerance(yawTolerance);
+
+        addRequirements(drive);
+
+          
+        if (alliance == Alliance.Red) {
+            redAlliance = true;
+        } else {
+            redAlliance = false;
+        }
     
-
-    private final double poseMargin;
-    private final double thetaMargin;
-    
-    private boolean shootingPhase;
-
-    private final AutoDrive m_driver;
-    private final PositionChecker m_poseChecker;
-
-    public AssistedShoot(DriveSubsystem driveSubsystem, ShooterSubsystem shooterSubsystem, LimelightSubsystem limelightSubsystem) {
-
-        m_driveSubsystem = driveSubsystem;
-        m_shooterSubsystem = shooterSubsystem;
-        m_limelightSubsystem = limelightSubsystem;
-        addRequirements(m_driveSubsystem, m_shooterSubsystem);   
-        
-        poseMargin = (.1)/2; //in meters
-        thetaMargin = (.5)/2; //in degrees
-
-        m_driver = new AutoDrive(driveSubsystem);
-        m_poseChecker = new PositionChecker(driveSubsystem);
 
     }
 
-    
     @Override
     public void initialize() {
 
-        if(assistNeeded()) {
-
-        }
-
-    }
-
-    public boolean assistNeeded(){
-        boolean assistNeeded;
-
-      
-
-        //alignment of the limelight 
-        m_tX = m_limelightSubsystem.getX3d();
-        m_tY = m_limelightSubsystem.getY3d();
-
-        //calucalutes the offset from the desired state and current state of the robot
-       // m_botPose = m_limelightSubsystem.getPose2d()
-       double m_xDiff = m_botPose.getX() - desiredX;
-       double m_yDiff = m_botPose.getY() - desiredY;
-       double m_thetaDiff = m_botPose.getRotation().getDegrees() - desiredTheta;
-
-       //checks if the ofset from the desired shooting state is within the margin of error
-       if (-poseMargin < m_xDiff && m_xDiff < poseMargin &&
-           -poseMargin < m_yDiff && m_yDiff < poseMargin &&
-           -thetaMargin < m_thetaDiff && m_thetaDiff < thetaMargin) {
-            
-            assistNeeded = false; //It is aligned --> No adjustment needed
-       } else {
-            assistNeeded = false; //It is not aligned --> adjustment Needed
-       }
-
-        return assistNeeded;
+        
     }
 
 
 
     // Called every time the scheduler runs while the command is scheduled.
-    @Override
+     @Override
     public void execute() {
-        //check is limelight is aimed correctly 
-        if (m_driver.getSwerveController().isFinished()) {
-        
-            if (!assistNeeded()) {
-            //    shoot(); //not a method yet!!!!<------
-            }
-
+       // Only align if the target for our alliance is visible
+        if (!limelight.hasTarget(redAlliance)) {
+            drive.driveRobotRelative(new ChassisSpeeds(0, 0, 0));
+            return;
         }
-        
-        
+
+        // Compute PID outputs
+        // Limelight X/Y are usually in degrees, you may need to scale to meters/sec
+        double vx = xController.calculate(limelight.getTy(), limelight.tySetpoint);
+        double vy = yController.calculate(limelight.getTx(), limelight.txSetpoint);
+        double omega = yawController.calculate(limelight.getYaw(), limelight.yawSetpoint);
+
+        // Optional: limit max speedju
+        double maxSpeed = 2.0; // m/s
+        vx = Math.max(Math.min(vx, maxSpeed), -maxSpeed);
+        vy = Math.max(Math.min(vy, maxSpeed), -maxSpeed);
+        omega = Math.max(Math.min(omega, 2.0), -2.0); // rad/s or units consistent with driveRobotRelative
+
+        // Drive the robot (robot-relative speeds)
+        drive.driveRobotRelative(new ChassisSpeeds(vx, vy, omega));
     }
 
-    // Called once the command ends or is interrupted.
-    @Override
-    public void end(boolean interrupted) {
-    }
-
-    // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return false;
+        return xController.atSetpoint() && yController.atSetpoint() && yawController.atSetpoint();
     }
 
     @Override
-    public boolean runsWhenDisabled() {
-      
-        return false;
-
-     
+    public void end(boolean interrupted) {
+        drive.driveRobotRelative(new ChassisSpeeds(0, 0, 0));
     }
 }

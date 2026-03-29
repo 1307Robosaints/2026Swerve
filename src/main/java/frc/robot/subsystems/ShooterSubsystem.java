@@ -62,18 +62,24 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   public void setShooterSpeed(double speed) { //out of voltage -1 to 1
-    //m_shooterSpark1.set(speed);
+    m_shooterSpark1.set(speed);
     m_shooterSpark2.set(speed);
   }
 
   public void setShooterLeft(double speed) { //out of voltage -1 to 1
     m_shooterSpark2.set(speed);
+    System.out.println("Method");
   }
 
   public void setShooterRight(double speed) { //out of voltage -1 to 1
     m_shooterSpark1.set(speed);
   }
 
+  /**
+   * creates a PID to ramp up the speed of the shooter
+   * 
+   * @param speed is in m/s (idk what the limit is)
+   */
   public void setShooterSpeedPID(double speed) { //speed in m/s
     m_shooterClosedLoopController1.setSetpoint(speed, SparkMax.ControlType.kVelocity);
     m_shooterClosedLoopController2.setSetpoint(speed, SparkMax.ControlType.kVelocity);
@@ -81,6 +87,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   public void stopShooter() {
     m_shooterSpark1.stopMotor();
+    m_shooterSpark2.stopMotor();
   }
 
 }

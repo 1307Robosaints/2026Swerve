@@ -4,6 +4,11 @@
 
 package frc.robot;
 
+import java.util.List;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -19,39 +24,38 @@ import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.PS4Controller.Button;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.Constants.ShooterConstants;
+import frc.robot.codebases.controllers.Controller;
+import frc.robot.codebases.controllers.PS4ControllerWrapper;
 import frc.robot.codebases.controllers.REVController;
 import frc.robot.codebases.controllers.XboxControllerWrapper;
+import frc.robot.commands.AssistedShoot;
+import frc.robot.commands.AutoShoot;
 import frc.robot.commands.Climb;
 import frc.robot.commands.Fold;
 import frc.robot.commands.Intake;
 import frc.robot.commands.Shoot;
-import frc.robot.limelightlib.LimelightHelpers;
-import frc.robot.subsystems.DriveSubsystem;
-import frc.robot.subsystems.FolderSubsystem;
-import frc.robot.subsystems.LimelightSubsystem;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.StartEndCommand;
-import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import frc.robot.codebases.controllers.Controller;
-import frc.robot.codebases.controllers.PS4ControllerWrapper;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
-import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.ClimberSubsystem;
 import frc.robot.subsystems.ConveyerSubsystem;
+import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.subsystems.FolderSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import java.util.List;
+import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+
 
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -62,13 +66,13 @@ import java.util.List;
 public class RobotContainer {
 
 //SUBSYSTEMS
-  private final DriveSubsystem m_driver = new DriveSubsystem();
-  private final LimelightSubsystem m_limelight = new LimelightSubsystem();
-  private final ShooterSubsystem m_shooter = new ShooterSubsystem();
-  private final ConveyerSubsystem m_conveyer = new ConveyerSubsystem();
-  private final ClimberSubsystem m_climber = new ClimberSubsystem();
-  private final IntakeSubsystem m_intake = new IntakeSubsystem();
-  private final FolderSubsystem m_folder = new FolderSubsystem();
+  public final DriveSubsystem m_driver = new DriveSubsystem();
+  public final LimelightSubsystem m_limelight = new LimelightSubsystem();
+  public final ShooterSubsystem m_shooter = new ShooterSubsystem();
+  public final ConveyerSubsystem m_conveyer = new ConveyerSubsystem();
+  public final ClimberSubsystem m_climber = new ClimberSubsystem();
+  public final IntakeSubsystem m_intake = new IntakeSubsystem();
+  public final FolderSubsystem m_folder = new FolderSubsystem();
 
 //CONTROLLER
   //Driving Controller
@@ -84,6 +88,9 @@ public class RobotContainer {
   private final SendableChooser<GenericHID> m_controllerChooserTech = new SendableChooser<>();
 
 //AUTO
+
+  private final SendableChooser<Command> autoChooser;
+
   // rotation controller
   private final PIDController turnController = new PIDController(0.65, 0, 0.01); 
   // distance controller
@@ -114,56 +121,32 @@ public class RobotContainer {
     SmartDashboard.putData("Tech (port 1 !!!)", m_controllerChooserTech); //put it on the dashboard
     SmartDashboard.putBoolean("Field Oriented", true);
 
+    //AUTO
+    configureAutoCommands();
+
+    autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Auto Chooser", autoChooser);
+
     
+    //NamedCommands.registerCommand("Folder Down", new Fold(m_folder, false));
+    //NamedCommands.registerCommand("Intake", new Intake(m_intake, true));
+
     // Configure the button bindings
     configureButtonBindings();
 
     // Configure default commands
-    m_driver.setDefaultCommand(
-    new RunCommand(() -> {
-
-        boolean goAttackMode =
-            m_limelight.hasTarget()
-            && (LimelightHelpers.getFiducialID("limelight") == 10
-                || LimelightHelpers.getFiducialID("limelight") == 26)
-            && getControllerDriver().getSquareButton();
-
-        if (goAttackMode) {
-            double turnSpeed = turnController.calculate(m_limelight.getTagYaw(), 0);
-            double driveSpeed = driveController.calculate(m_limelight.getZ3d(), 2.25);
-            double lrSpeed = lrController.calculate(m_limelight.getX3d(), 0);
-            driveSpeed = rateLimiter.calculate(driveSpeed);
-            //lrSpeed = rateLimiter.calculate(lrSpeed);
-            //turnSpeed = rateLimiter.calculate(turnSpeed);
-
-            m_driver.drive(
-                -driveSpeed,
-                lrSpeed,
-                turnSpeed,
-                false
-            );
-
-            //System.out.println("TARGETTING!!!");
-        } else {
-           //fieldOriented = SmartDashboard.getBoolean("Field Oriented", true);
-            m_driver.drive(
+    m_driver.setDefaultCommand( 
+      new RunCommand(  
+        () -> m_driver.drive(
                 -MathUtil.applyDeadband(getControllerDriver().getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(getControllerDriver().getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(getControllerDriver().getRightX(), OIConstants.kDriveDeadband),
-                fieldOriented
-            );
+                -MathUtil.applyDeadband(m_REVControllerDriver.getRawAxis(4), OIConstants.kDriveDeadband), //rightX
+                DriveConstants.kFeildOreiented)
+            , m_driver) );
+  
 
-            //System.out.println("teleop...");
-          }
 
-      }, m_driver)
-
-    );
-
-    m_conveyer.setDefaultCommand(
-      new RunCommand(
-        () -> m_conveyer.setConveyerSpeed(getControllerTech().getL2Axis()),
-        m_conveyer));
+    
 
     //Smart Dashboard Buttons
     SmartDashboard.putData("Reset Gyro", new InstantCommand(() -> m_driver.zeroHeading()));
@@ -205,7 +188,7 @@ public class RobotContainer {
   private void configureButtonBindings() {
     
     //X Wheel Formation
-    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kSquare.value)
+    new JoystickButton(getControllerHIDDriver(), 1) //Cross
         .whileTrue(new RunCommand(
             () -> m_driver.setX(),
             m_driver));
@@ -218,32 +201,54 @@ public class RobotContainer {
     */
 
     //Climb Up
-    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kTriangle.value)
+    new JoystickButton(getControllerHIDDriver(), 4) //Triangle
       .whileTrue(new Climb(m_climber, true));
 
     //Climb Down
-    new JoystickButton(getControllerHIDDriver(), PS4Controller.Button.kCross.value)
+    new JoystickButton(getControllerHIDDriver(),2) //Circles
       .whileTrue(new Climb(m_climber, false));
     
     //Shoot
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kSquare.value)
-      .whileTrue(new Shoot(m_shooter, m_conveyer, SmartDashboard.getNumber("Shooter Speed", 1)));
+      .whileTrue(new Shoot(m_shooter, m_conveyer, SmartDashboard.getNumber("Shooter Speed", ShooterConstants.kShooterSpeedDefault)));
 
     //Put Folder Down
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCircle.value)
         .whileTrue(new Fold(m_folder, false));
 
+    //Put Folder UP
+    new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kTriangle.value)
+        .whileTrue(new Fold(m_folder, true));
+
     //Intake
     new JoystickButton(getControllerHIDTech(), PS4Controller.Button.kCross.value)
       .whileTrue(new Intake(m_intake, true));
 
+    
+
+    //Specail: run right shooter
+    new JoystickButton(getControllerHIDDriver(), 3) //square
+      .whileTrue(new AssistedShoot(m_driver, m_limelight));
+
+  }
+
+  public void configureAutoCommands() {
+
+    NamedCommands.registerCommand("Shoot", new AutoShoot(m_shooter, m_conveyer, ShooterConstants.kShooterSpeedDefault));
+
+  }
+
+
+
+  public Command getPPAutonomousCommand() {
+    return autoChooser.getSelected();
   }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
    *
    * @return the command to run in autonomous
-   */
+   *
   public Command getAutonomousCommand() {
     // Create config for trajectory
     TrajectoryConfig config = new TrajectoryConfig(
@@ -310,5 +315,5 @@ public class RobotContainer {
         new RunCommand(() -> m_conveyer.setConveyerSpeed(0), m_conveyer)
       )
     );
-  }
+  }*/
 }

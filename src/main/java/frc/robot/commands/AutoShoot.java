@@ -27,7 +27,7 @@ import frc.robot.Constants.ConveyerConstants;
 /**
  *
  */
-public class Shoot extends Command {
+public class AutoShoot extends Command {
 
     private final ShooterSubsystem m_shootSubsystem;
     private final ConveyerSubsystem m_conveySubsystem;
@@ -42,7 +42,7 @@ public class Shoot extends Command {
     * @param speed speed you want to shoot at
     *
     */
-    public Shoot(ShooterSubsystem shootSubsystem, ConveyerSubsystem conveySubsystem, double speed) {
+    public AutoShoot(ShooterSubsystem shootSubsystem, ConveyerSubsystem conveySubsystem, double speed) {
 
         m_speed = speed;
         m_shootSubsystem = shootSubsystem;
@@ -60,9 +60,18 @@ public class Shoot extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_shootSubsystem.setShooterSpeed(m_speed);
-        if (m_timer.hasElapsed(2)){ //I want to fix this so it does it when the shooter reaches a certain speed
+        
+        if (!m_timer.hasElapsed(7))
+            m_shootSubsystem.setShooterSpeed(m_speed);
+        
+        
+        if (m_timer.hasElapsed(2) && !m_timer.hasElapsed(7)) { //I want to fix this so it does it when the shooter reaches a certain speed
             m_conveySubsystem.setConveyerSpeed(ConveyerConstants.kConveyerSpeed);
+        }
+
+        if (m_timer.hasElapsed(7)){ //I want to fix this so it does it when the shooter reaches a certain speed
+            m_shootSubsystem.stopShooter(); 
+            m_conveySubsystem.stopConveyer();
         }
     }
 

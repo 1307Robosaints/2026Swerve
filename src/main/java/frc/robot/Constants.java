@@ -28,6 +28,10 @@ public final class Constants {
     public static final double kMaxSpeedMetersPerSecond = 4.8;
     public static final double kMaxAngularSpeed = 2 * Math.PI; // radians per second
 
+    //Feild Oreinted?
+    public static final boolean kFeildOreiented = true;
+
+
     // Chassis configuration
     public static final double kTrackWidth = Units.inchesToMeters(24);
     // Distance between centers of right and left wheels on robot
@@ -109,6 +113,8 @@ public final class Constants {
     public static final int kShooterMotorCanId = 9;
     public static final double kShooterWheelDiameterMeters = 0.1016; // 4 inches
     public static final double kShooterWheelCircumferenceMeters = kShooterWheelDiameterMeters * Math.PI;
+    public static final double kShooterSpeedDefault =.75;
+    
   }
 
   public static final class FeildConstants {
@@ -124,8 +130,8 @@ public final class Constants {
 
   public static final class FolderConstants {
 
-    public static final double kFoldUpSpeed = 1;
-    public static final double kFoldDownSpeed = -.25;
+    public static final double kFoldUpSpeed = .2;
+    public static final double kFoldDownSpeed = -.2;
   }
 
   
