@@ -25,8 +25,9 @@ import frc.robot.Constants;
 public class ConveyerSubsystem extends SubsystemBase {
   
   private final SparkMax m_conveyerSpark;
+
   
-  /** Creates a new conveyerSubsystem. */
+  /** Creates a new conveyerSubystem. */
   public ConveyerSubsystem() {
 
     m_conveyerSpark = new SparkMax(10, SparkMax.MotorType.kBrushless); //is it brushless or brushed? check the wiring and the motor
